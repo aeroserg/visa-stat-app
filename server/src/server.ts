@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import path from 'path';
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT_BACKEND;
 
 app.use(bodyParser.json());
 app.use(cors());

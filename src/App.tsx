@@ -17,10 +17,9 @@ import axios from 'axios';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import RadioCard from './RadioCard';
-import Cookies from 'js-cookie';
 
-// const HOST = process.env.REACT_APP_HOST;
-const HOST = 'http://localhost:3001'
+const HOST = process.env.HOST;
+// const HOST = 'http://localhost:3001';
 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -94,7 +93,7 @@ const App = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const lastSubmission = Cookies.get('lastSubmission');
+    const lastSubmission = localStorage.getItem('lastSubmission');
     if (lastSubmission && new Date().getTime() - new Date(lastSubmission).getTime() < 3600000) {
       toast({
         title: "You can only submit data once per hour.",
@@ -108,7 +107,7 @@ const App = () => {
     axios.post(`${HOST}/api/visa-stats`, form).then(response => {
       setStats([...stats, response.data]);
       setFilteredStats([...stats, response.data]);
-      Cookies.set('lastSubmission', new Date().toISOString(), { expires: 1 });
+      localStorage.setItem('lastSubmission', new Date().toISOString());
       toast({
         title: "Данные успешно записаны в статистику",
         status: "success",
@@ -202,7 +201,17 @@ const App = () => {
         <VStack spacing={3} align="stretch">
           <FormControl>
             <FormLabel>Город</FormLabel>
-            <Input name="city" value={form.city} onChange={handleChange} />
+            <Select name="city" value={form.city} onChange={handleChange}>
+              <option value="Москва">Москва</option>
+              <option value="Краснодар">Краснодар</option>
+              <option value="Екатеринбург">Екатеринбург</option>
+              <option value="Нижний Новгород">Нижний Новгород</option>
+              <option value="Ростов-на-Дону">Ростов-на-Дону</option>
+              <option value="Новосибирск">Новосибирск</option>
+              <option value="Казань">Казань</option>
+              <option value="Самара">Самара</option>
+              <option value="Санкт-Петербург">Санкт-Петербург</option>
+            </Select>
           </FormControl>
           <FormControl>
             <FormLabel>Дата подачи на визу</FormLabel>

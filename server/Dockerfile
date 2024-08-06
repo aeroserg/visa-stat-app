@@ -1,12 +1,13 @@
 FROM node:20-alpine
 
-WORKDIR /server
-COPY package.json .
-COPY package-lock.json .
+WORKDIR /app
 
-COPY . .
+COPY server/package.json server/package-lock.json ./
 
-RUN npm i
+RUN npm install
+
+COPY server/ ./
 
 EXPOSE 3001
+
 ENTRYPOINT ["npm", "run", "start"]

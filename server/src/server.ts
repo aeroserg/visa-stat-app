@@ -3,7 +3,7 @@ import sqlite3 from 'sqlite3';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import * as XLSX from 'xlsx';
-import { writeFile } from 'fs/promises';
+import path from 'path';
 
 const app = express();
 const port = 3001;
@@ -11,11 +11,14 @@ const port = 3001;
 app.use(bodyParser.json());
 app.use(cors());
 
+// Set the path for the SQLite database file
+const dbPath = path.resolve(__dirname, 'visa_stats.db');
+
 // Initialize SQLite database
-const db = new sqlite3.Database(':memory:');
+const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
-  db.run(`CREATE TABLE visa_stats (
+  db.run(`CREATE TABLE IF NOT EXISTS visa_stats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     city TEXT,
     visa_application_date TEXT,

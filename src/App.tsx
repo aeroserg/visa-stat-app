@@ -8,12 +8,20 @@ import {
   Select,
   VStack,
   useRadioGroup,
-  Stack
+  Container,
+  FormControl,
+  FormLabel,
+  useToast
 } from '@chakra-ui/react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import RadioCard from './RadioCard';
+import Cookies from 'js-cookie';
+
+// const HOST = process.env.REACT_APP_HOST;
+const HOST = 'http://localhost:3001'
+
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -43,6 +51,7 @@ interface VisaStat {
 type VisaStatKeys = keyof VisaStat;
 
 const App = () => {
+  const toast = useToast();
   const [form, setForm] = useState({
     city: '',
     visa_application_date: '',
@@ -68,7 +77,7 @@ const App = () => {
   const [filteredStats, setFilteredStats] = useState<VisaStat[]>([]);
 
   useEffect(() => {
-    axios.get('http://localhost:3001/api/visa-stats').then(response => {
+    axios.get(`${HOST}/api/visa-stats`).then(response => {
       setStats(response.data);
       setFilteredStats(response.data);
     });
@@ -84,9 +93,36 @@ const App = () => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    axios.post('http://localhost:3001/api/visa-stats', form).then(response => {
+
+    const lastSubmission = Cookies.get('lastSubmission');
+    if (lastSubmission && new Date().getTime() - new Date(lastSubmission).getTime() < 3600000) {
+      toast({
+        title: "You can only submit data once per hour.",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    axios.post(`${HOST}/api/visa-stats`, form).then(response => {
       setStats([...stats, response.data]);
       setFilteredStats([...stats, response.data]);
+      Cookies.set('lastSubmission', new Date().toISOString(), { expires: 1 });
+      toast({
+        title: "Данные успешно записаны в статистику",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    }).catch(error => {
+      toast({
+        title: "Что-то пошло не так",
+        description: "Ошибка: " + JSON.stringify(error),
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     });
   };
 
@@ -140,17 +176,17 @@ const App = () => {
   };
 
   const filters = [
-    { name: 'Город', key: 'city' },
-    { name: 'Цель поездки', key: 'travel_purpose' },
-    { name: 'Дополнительный запрос документов', key: 'additional_doc_request', isBoolean: true },
-    { name: 'Билеты выкуплены', key: 'tickets_purchased', isBoolean: true },
-    { name: 'Отели выкуплены', key: 'hotels_purchased', isBoolean: true },
-    { name: 'Визовый центр', key: 'visa_center' },
-    { name: 'Статус визы', key: 'visa_status' },
+    { name: 'Город', key: 'city' as VisaStatKeys },
+    { name: 'Цель поездки', key: 'travel_purpose' as VisaStatKeys },
+    { name: 'Дополнительный запрос документов', key: 'additional_doc_request' as VisaStatKeys, isBoolean: true },
+    { name: 'Билеты выкуплены', key: 'tickets_purchased' as VisaStatKeys, isBoolean: true },
+    { name: 'Отели выкуплены', key: 'hotels_purchased' as VisaStatKeys, isBoolean: true },
+    { name: 'Визовый центр', key: 'visa_center' as VisaStatKeys },
+    { name: 'Статус визы', key: 'visa_status' as VisaStatKeys },
   ];
 
   const handleDownload = async () => {
-    const response = await axios.get('http://localhost:3001/api/export', { responseType: 'blob' });
+    const response = await axios.get(`${HOST}/api/export`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -161,47 +197,104 @@ const App = () => {
   };
 
   return (
-    <Box p={5}>
+    <Container maxW="container.xl" p={5}>
       <form onSubmit={handleSubmit}>
         <VStack spacing={3} align="stretch">
-          <Input name="city" placeholder="Город" value={form.city} onChange={handleChange} />
-          <Input name="visa_application_date" type="date" placeholder="Дата подачи на визу" value={form.visa_application_date} onChange={handleChange} />
-          <Input name="visa_issue_date" type="date" placeholder="Дата выдачи визы" value={form.visa_issue_date} onChange={handleChange} />
-          <Input name="travel_purpose" placeholder="Цель поездки" value={form.travel_purpose} onChange={handleChange} />
-          <Input name="planned_travel_date" type="date" placeholder="Предполагаемая дата поездки" value={form.planned_travel_date} onChange={handleChange} />
-          <Checkbox name="additional_doc_request" isChecked={form.additional_doc_request} onChange={handleCheckboxChange}>Был дополнительный запрос документов?</Checkbox>
-          <Checkbox name="tickets_purchased" isChecked={form.tickets_purchased} onChange={handleCheckboxChange}>Билеты выкуплены?</Checkbox>
-          <Checkbox name="hotels_purchased" isChecked={form.hotels_purchased} onChange={handleCheckboxChange}>Отели выкуплены?</Checkbox>
-          <Input name="employment_certificate" placeholder="Справка о типе занятости" value={form.employment_certificate} onChange={handleChange} />
-          <Input name="financial_guarantee" type="number" placeholder="Фингарантия, тыс руб" value={form.financial_guarantee} onChange={handleChange} />
-          <Input name="comments" placeholder="Комментарии" value={form.comments} onChange={handleChange} />
-          <Box {...getVisaStatusRootProps()}>
-            <HStack spacing={3}>
-              <RadioCard {...getVisaStatusRadioProps({ value: 'Выдана' })}>Выдана</RadioCard>
-              <RadioCard {...getVisaStatusRadioProps({ value: 'Отказ' })}>Отказ</RadioCard>
-            </HStack>
-          </Box>
-          <Box {...getVisaCenterRootProps()}>
-            <HStack spacing={3}>
-              <RadioCard {...getVisaCenterRadioProps({ value: 'VMS' })}>VMS</RadioCard>
-              <RadioCard {...getVisaCenterRadioProps({ value: 'Альмавива' })}>Альмавива</RadioCard>
-            </HStack>
-          </Box>
-          <Input name="visa_issued_for_days" type="number" placeholder="Виза выдана на, дней" value={form.visa_issued_for_days} onChange={handleChange} />
-          <Input name="corridor_days" type="number" placeholder="Коридор, дней" value={form.corridor_days} onChange={handleChange} />
-          <Input name="past_visas_trips" placeholder="Прошлые визы, поездки" value={form.past_visas_trips} onChange={handleChange} />
-          <Input name="consul" placeholder="Консул" value={form.consul} onChange={handleChange} />
-          <Input name="planned_stay_in_italy" placeholder="Предполагаемое время препровождения в Италии" value={form.planned_stay_in_italy} onChange={handleChange} />
+          <FormControl>
+            <FormLabel>Город</FormLabel>
+            <Input name="city" value={form.city} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Дата подачи на визу</FormLabel>
+            <Input name="visa_application_date" type="date" value={form.visa_application_date} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Дата выдачи визы</FormLabel>
+            <Input name="visa_issue_date" type="date" value={form.visa_issue_date} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Цель поездки</FormLabel>
+            <Input name="travel_purpose" value={form.travel_purpose} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Предполагаемая дата поездки</FormLabel>
+            <Input name="planned_travel_date" type="date" value={form.planned_travel_date} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <Checkbox name="additional_doc_request" isChecked={form.additional_doc_request} onChange={handleCheckboxChange}>
+              Был дополнительный запрос документов?
+            </Checkbox>
+          </FormControl>
+          <FormControl>
+            <Checkbox name="tickets_purchased" isChecked={form.tickets_purchased} onChange={handleCheckboxChange}>
+              Билеты выкуплены?
+            </Checkbox>
+          </FormControl>
+          <FormControl>
+            <Checkbox name="hotels_purchased" isChecked={form.hotels_purchased} onChange={handleCheckboxChange}>
+              Отели выкуплены?
+            </Checkbox>
+          </FormControl>
+          <FormControl>
+            <FormLabel>Справка о типе занятости</FormLabel>
+            <Input name="employment_certificate" value={form.employment_certificate} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Фингарантия, тыс руб</FormLabel>
+            <Input name="financial_guarantee" type="number" value={form.financial_guarantee} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Комментарии</FormLabel>
+            <Input name="comments" value={form.comments} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Статус визы</FormLabel>
+            <Box {...getVisaStatusRootProps()}>
+              <HStack spacing={3}>
+                <RadioCard {...getVisaStatusRadioProps({ value: 'Выдана' })}>Выдана</RadioCard>
+                <RadioCard {...getVisaStatusRadioProps({ value: 'Отказ' })}>Отказ</RadioCard>
+              </HStack>
+            </Box>
+          </FormControl>
+          <FormControl>
+            <FormLabel>Визовый центр</FormLabel>
+            <Box {...getVisaCenterRootProps()}>
+              <HStack spacing={3}>
+                <RadioCard {...getVisaCenterRadioProps({ value: 'VMS' })}>VMS</RadioCard>
+                <RadioCard {...getVisaCenterRadioProps({ value: 'Альмавива' })}>Альмавива</RadioCard>
+              </HStack>
+            </Box>
+          </FormControl>
+          <FormControl>
+            <FormLabel>Виза выдана на, дней</FormLabel>
+            <Input name="visa_issued_for_days" type="number" value={form.visa_issued_for_days} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Коридор, дней</FormLabel>
+            <Input name="corridor_days" type="number" value={form.corridor_days} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Прошлые визы, поездки</FormLabel>
+            <Input name="past_visas_trips" value={form.past_visas_trips} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Консул</FormLabel>
+            <Input name="consul" value={form.consul} onChange={handleChange} />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Предполагаемое время препровождения в Италии</FormLabel>
+            <Input name="planned_stay_in_italy" value={form.planned_stay_in_italy} onChange={handleChange} />
+          </FormControl>
           <Button type="submit" mt={3}>Отправить</Button>
         </VStack>
       </form>
       <Box mt={5}>
         {filters.map(filter => (
           <Box key={filter.key} mb={3}>
-            <Select placeholder={`Фильтр по: ${filter.name}`} onChange={(e) => handleFilterChange(filter.key as keyof VisaStat, e.target.value)}>
+            <Select placeholder={`Фильтр по: ${filter.name}`} onChange={(e) => handleFilterChange(filter.key, e.target.value)}>
               <option value="Пустое">Пустое</option>
-              {[...new Set(stats.map(stat => stat[filter.key] || ''))].map(value => (
-                <option key={value} value={String(value)}>{String(value)}</option>
+              {[...new Set(stats.map(stat => stat[filter.key] || ''))].map((value, index) => (
+                <option key={index} value={String(value)}>{String(value)}</option>
               ))}
             </Select>
           </Box>
@@ -216,7 +309,7 @@ const App = () => {
         <Box>Минимальное время ожидания: {filteredStats.length > 0 ? Math.min(...filteredStats.map(stat => stat.waiting_days)) : 0} дней</Box>
       </Box>
       <Button onClick={handleDownload} mt={5}>Экспортировать в XLSX</Button>
-    </Box>
+    </Container>
   );
 };
 

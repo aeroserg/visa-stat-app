@@ -42,7 +42,7 @@ db.serialize(() => {
   )`);
 });
 
-app.post('/api/visa-stats', (req, res) => {
+app.post('/visa_app/api/visa-stats', (req, res) => {
   const {
     city, visa_application_date, visa_issue_date, travel_purpose, planned_travel_date,
     additional_doc_request, tickets_purchased, hotels_purchased, employment_certificate,
@@ -72,7 +72,7 @@ app.post('/api/visa-stats', (req, res) => {
   });
 });
 
-app.get('/api/visa-stats', (req, res) => {
+app.get('/visa_app/api/visa-stats', (req, res) => {
   db.all(`SELECT * FROM visa_stats`, [], (err, rows) => {
     if (err) {
       throw err;
@@ -81,7 +81,7 @@ app.get('/api/visa-stats', (req, res) => {
   });
 });
 
-app.get('/api/export', (req, res) => {
+app.get('/visa_app/api/export', (req, res) => {
   db.all(`SELECT * FROM visa_stats`, [], async (err, rows) => {
     if (err) {
       res.status(500).send("Error fetching data");

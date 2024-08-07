@@ -19,7 +19,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import RadioCard from './RadioCard';
 import process from 'process';
 
-const HOST = process.env.HOST || 'http://80.249.131.221:3001';
+const HOST = process.env.HOST || 'https://explainagent.ru/visa_app/server/';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 

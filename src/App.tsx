@@ -17,9 +17,8 @@ import axios from 'axios';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import RadioCard from './RadioCard';
-import process from 'process';
 
-const HOST = process.env.HOST || 'https://explainagent.ru/visa_app_server/';
+const HOST = 'https://explainagent.ru/visa_app_server/';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 

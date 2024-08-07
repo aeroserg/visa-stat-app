@@ -18,7 +18,7 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import RadioCard from './RadioCard';
 
-const HOST = process.env.HOST || 'http://localhost:3001';
+const HOST = process.env.HOST || 'http://80.249.131.221:3001';
 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);

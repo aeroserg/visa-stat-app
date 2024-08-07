@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: visa-stat-app-frontend
     ports:
-      - '5173:5173'
+      - '4173:4173'
 
   visa-stat-app-backend:
     restart: always

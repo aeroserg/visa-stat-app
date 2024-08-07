@@ -8,5 +8,5 @@ COPY . .
 
 RUN npm i
 
-EXPOSE 5173
-ENTRYPOINT ["npm", "run", "dev"]
+EXPOSE 4173
+ENTRYPOINT ["npm", "run", "start"]

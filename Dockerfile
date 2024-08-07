@@ -1,12 +1,11 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /client
 COPY package.json .
 COPY package-lock.json .
 
-COPY . .
-
 RUN npm i
+COPY . .
 
 EXPOSE 4173
 ENTRYPOINT ["npm", "run", "start"]

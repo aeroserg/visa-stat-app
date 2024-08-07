@@ -78,7 +78,7 @@ const App = () => {
 
   useEffect(() => {
     // axios.get(`https://explainagent.ru/visa_app/api/visa-stats`).then(response => {
-    axios.get(`${HOST}/visa_app/api/visa-stats`).then(response => {
+    axios.get(`${HOST}/api/visa-stats`).then(response => {
       setStats(response.data);
       setFilteredStats(response.data);
     });
@@ -111,7 +111,7 @@ const App = () => {
       return;
     }
 
-    axios.post(`${HOST}/visa_app/api/visa-stats`, form).then(response => {
+    axios.post(`${HOST}/api/visa-stats`, form).then(response => {
       setStats([...stats, response.data]);
       setFilteredStats([...stats, response.data]);
       localStorage.setItem('lastSubmission', new Date().toISOString());
@@ -200,7 +200,7 @@ const App = () => {
   ];
 
   const handleDownload = async () => {
-    const response = await axios.get(`${HOST}/visa_app/api/export`, { responseType: 'blob' });
+    const response = await axios.get(`${HOST}/api/export`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;

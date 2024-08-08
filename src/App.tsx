@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Input,
@@ -12,15 +12,38 @@ import {
   Flex,
   Container,
   useRadioGroup,
-} from '@chakra-ui/react';
-import axios from 'axios';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData, TimeScale } from 'chart.js';
-import RadioCard from './RadioCard';
+} from "@chakra-ui/react";
+import axios from "axios";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ChartData,
+  TimeScale,
+  ChartOptions,
+} from "chart.js";
+import "chartjs-adapter-moment";
+import RadioCard from "./RadioCard";
 
-const HOST = 'https://explainagent.ru/visa_app_server/';
+const HOST = "https://explainagent.ru/visa_app_server/";
+const COUNTRY = 'Italy'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale
+);
 
 interface VisaStat {
   id: number;
@@ -50,57 +73,78 @@ type VisaStatKeys = keyof VisaStat;
 const App = () => {
   const toast = useToast();
   const [form, setForm] = useState({
-    city: '',
-    visa_application_date: '',
-    visa_issue_date: '',
-    travel_purpose: '',
-    planned_travel_date: '',
+    city: "",
+    visa_application_date: "",
+    visa_issue_date: "",
+    travel_purpose: "",
+    planned_travel_date: "",
     additional_doc_request: false,
     tickets_purchased: false,
     hotels_purchased: false,
-    employment_certificate: '',
+    employment_certificate: "",
     financial_guarantee: 0,
-    comments: '',
-    visa_center: 'VMS',
-    visa_status: '1',
+    comments: "",
+    visa_center: "VMS",
+    visa_status: "1",
     visa_issued_for_days: 0,
     corridor_days: 0,
-    past_visas_trips: '',
-    consul: '',
-    planned_stay_in_country: ''
+    past_visas_trips: "",
+    consul: "",
+    planned_stay_in_country: "",
   });
 
   const [stats, setStats] = useState<VisaStat[]>([]);
   const [filteredStats, setFilteredStats] = useState<VisaStat[]>([]);
+  const [showChart, setShowChart] = useState(false);
 
   const CURRENT_WIDTH = window?.innerWidth;
 
   useEffect(() => {
-    axios.get(`${HOST}/api/visa-stats`).then(response => {
+    axios.get(`${HOST}/api/visa-stats`).then((response) => {
       setStats(response.data);
       setFilteredStats(response.data);
     });
+    // Check browser and OS
+    console.log(window.navigator.userAgent);
+    console.log(window.navigator.vendor);
+    const userAgent = window.navigator.userAgent;
+    const isApple =
+      window.navigator.vendor.includes("Apple") ||
+      userAgent.includes("(Iphone");
+    const isWindows = userAgent.includes("(Windows");
+    const isFireFox = userAgent.includes("Firefox/");
+    const isGoogle = window.navigator.vendor.includes("Google");
+    if (isGoogle || (!isFireFox && (!isApple || isWindows))) {
+      setShowChart(true);
+    }
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name } = e.target;
     let { value } = e.target;
-    if (name.includes('date')) {
-      value = value.split('-').reverse().join('.')
+    if (name.includes("date")) {
+      value = value.split("-").reverse().join(".");
     }
     setForm({
       ...form,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const lastSubmission = localStorage.getItem('lastSubmission');
-    if (lastSubmission && new Date().getTime() - new Date(lastSubmission).getTime() < 3600000) {
+    const lastSubmission = localStorage.getItem("lastSubmission");
+    if (
+      lastSubmission &&
+      new Date().getTime() - new Date(lastSubmission).getTime() < 3600000
+    ) {
       toast({
-        position: 'top',
+        position: "top",
         title: "Следующее заполнение статистики доступно через час",
         status: "warning",
         duration: 5000,
@@ -109,111 +153,173 @@ const App = () => {
       return;
     }
 
-    axios.post(`${HOST}/api/visa-stats`, form).then(response => {
-      setStats([...stats, response.data]);
-      setFilteredStats([...stats, response.data]);
-      localStorage.setItem('lastSubmission', new Date().toISOString());
-      toast({
-        position: 'top',
-        title: "Данные успешно записаны в статистику",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
+    axios
+      .post(`${HOST}/api/visa-stats`, form)
+      .then((response) => {
+        setStats([...stats, response.data]);
+        setFilteredStats([...stats, response.data]);
+        localStorage.setItem("lastSubmission", new Date().toISOString());
+        toast({
+          position: "top",
+          title: "Спасибо большое за ваш вклад! ",
+          description:
+            "Данные успешно записаны в статистику. Вы также можете скачать полную статистику внизу.",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+      })
+      .catch((error) => {
+        toast({
+          position: "top",
+          title: "Что-то пошло не так",
+          description: "Ошибка: " + JSON.stringify(error),
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
       });
-    }).catch(error => {
-      toast({
-        position: 'top',
-        title: "Что-то пошло не так",
-        description: "Ошибка: " + JSON.stringify(error),
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    });
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setForm({
       ...form,
-      [name]: checked
+      [name]: checked,
     });
   };
 
   const handleRadioChange = (name: string, value: string) => {
     setForm({
       ...form,
-      [name]: value
+      [name]: value,
     });
   };
 
   const visaStatusGroup = useRadioGroup({
-    name: 'visa_status',
+    name: "visa_status",
     value: form.visa_status,
-    onChange: (value) => handleRadioChange('visa_status', value),
+    onChange: (value) => handleRadioChange("visa_status", value),
   });
 
   const visaCenterGroup = useRadioGroup({
-    name: 'visa_center',
+    name: "visa_center",
     value: form.visa_center,
-    onChange: (value) => handleRadioChange('visa_center', value),
+    onChange: (value) => handleRadioChange("visa_center", value),
   });
 
-  const { getRootProps: getVisaStatusRootProps, getRadioProps: getVisaStatusRadioProps } = visaStatusGroup;
-  const { getRootProps: getVisaCenterRootProps, getRadioProps: getVisaCenterRadioProps } = visaCenterGroup;
+  const {
+    getRootProps: getVisaStatusRootProps,
+    getRadioProps: getVisaStatusRadioProps,
+  } = visaStatusGroup;
+  const {
+    getRootProps: getVisaCenterRootProps,
+    getRadioProps: getVisaCenterRadioProps,
+  } = visaCenterGroup;
 
   const handleFilterChange = (key: VisaStatKeys, value: string) => {
-    if (value === '' || value === 'Пустое') {
+    if (value === "" || value === "Пустое") {
       setFilteredStats(stats);
     } else {
-      setFilteredStats(stats.filter(stat => {
-        const statValue = stat[key];
-        return statValue === value || (value === 'Пустое' && (statValue === null || statValue === undefined || statValue === ''));
-      }));
+      setFilteredStats(
+        stats.filter((stat) => {
+          const statValue = stat[key];
+          return (
+            statValue === value ||
+            (value === "Пустое" &&
+              (statValue === null ||
+                statValue === undefined ||
+                statValue === ""))
+          );
+        })
+      );
     }
   };
 
   const filterLastSixMonths = (stats: VisaStat[]) => {
     const yearAgo = new Date();
     yearAgo.setMonth(yearAgo.getMonth() - 12);
-    return stats.filter(stat => new Date(stat.visa_application_date) >= yearAgo);
+    return stats.filter(
+      (stat) => new Date(stat.visa_application_date) >= yearAgo
+    );
   };
 
-  const visaData: ChartData<'line', number[], string> = {
-    labels: filterLastSixMonths(filteredStats).map(stat => stat.visa_application_date),
+  const visaData: ChartData<"line", number[], string> = {
+    labels: filterLastSixMonths(filteredStats).map(
+      (stat) => stat.visa_application_date
+    ),
     datasets: [
       {
-        label: 'Среднее время ожидания',
-        data: filterLastSixMonths(filteredStats).map(stat => stat.waiting_days),
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        cubicInterpolationMode: 'monotone',
+        label: "Среднее время ожидания",
+        data: filterLastSixMonths(filteredStats).map(
+          (stat) => stat.waiting_days
+        ),
+        borderColor: "rgba(75, 192, 192, 1)",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        cubicInterpolationMode: "monotone",
         tension: 0.4,
-      }
-    ]
+      },
+    ],
+  };
+
+  const chartOptions: ChartOptions<"line"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: {
+      duration: 1,
+    },
+    scales: {
+      x: {
+        // type: 'time',
+        time: {
+          unit: "month",
+        },
+        title: {
+          display: true,
+          text: "Дата",
+        },
+        ticks: {
+          font: {
+            size: 12, // Adjust font size as needed
+          },
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Время ожидания (дней)",
+        },
+        ticks: {
+          font: {
+            size: 12, // Adjust font size as needed
+          },
+        },
+      },
+    },
+    onResize: (chart: ChartJS) => {
+      chart.update();
+    },
   };
 
   const filters = [
-    { name: 'Город', key: 'city' as VisaStatKeys },
-    { name: 'Цель поездки', key: 'travel_purpose' as VisaStatKeys },
-    { name: 'Дополнительный запрос документов', key: 'additional_doc_request' as VisaStatKeys, isBoolean: true },
-    { name: 'Билеты выкуплены', key: 'tickets_purchased' as VisaStatKeys, isBoolean: true },
-    { name: 'Отели выкуплены', key: 'hotels_purchased' as VisaStatKeys, isBoolean: true },
-    { name: 'Визовый центр', key: 'visa_center' as VisaStatKeys },
-    { name: 'Статус визы', key: 'visa_status' as VisaStatKeys },
+    { name: "Город", key: "city" as VisaStatKeys },
+    { name: "Цель поездки", key: "travel_purpose" as VisaStatKeys },
+    { name: "Визовый центр", key: "visa_center" as VisaStatKeys },
+    { name: "Статус визы", key: "visa_status" as VisaStatKeys },
   ];
 
   const handleDownload = async () => {
-    const response = await axios.get(`${HOST}/api/export`, { responseType: 'blob' });
+    const response = await axios.get(`${HOST}/api/export`, {
+      responseType: "blob",
+    });
     const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.setAttribute('download', 'visa_stats.xlsx');
+    link.setAttribute("download", `${COUNTRY}_visa_sttistic_${new Date().toISOString().split('T')[0]}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.remove();
   };
-
   return (
     <Container maxW="container.xl" p={5}>
       <form onSubmit={handleSubmit}>
@@ -234,53 +340,101 @@ const App = () => {
           </FormControl>
           <FormControl>
             <FormLabel>Дата подачи на визу</FormLabel>
-            <Input name="visa_application_date" type="date" value={form.visa_application_date} onChange={handleChange} />
+            <Input
+              name="visa_application_date"
+              type="date"
+              value={form.visa_application_date}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Дата выдачи визы</FormLabel>
-            <Input name="visa_issue_date" type="date" value={form.visa_issue_date} onChange={handleChange} />
+            <Input
+              name="visa_issue_date"
+              type="date"
+              value={form.visa_issue_date}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Цель поездки</FormLabel>
-            <Input name="travel_purpose" value={form.travel_purpose} onChange={handleChange} />
+            <Input
+              name="travel_purpose"
+              value={form.travel_purpose}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Предполагаемая дата поездки</FormLabel>
-            <Input name="planned_travel_date" type="date" value={form.planned_travel_date} onChange={handleChange} />
+            <Input
+              name="planned_travel_date"
+              type="date"
+              value={form.planned_travel_date}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
-            <Checkbox name="additional_doc_request" isChecked={form.additional_doc_request} onChange={handleCheckboxChange}>
+            <Checkbox
+              name="additional_doc_request"
+              isChecked={form.additional_doc_request}
+              onChange={handleCheckboxChange}
+            >
               Был дополнительный запрос документов?
             </Checkbox>
           </FormControl>
           <FormControl>
-            <Checkbox name="tickets_purchased" isChecked={form.tickets_purchased} onChange={handleCheckboxChange}>
+            <Checkbox
+              name="tickets_purchased"
+              isChecked={form.tickets_purchased}
+              onChange={handleCheckboxChange}
+            >
               Билеты выкуплены?
             </Checkbox>
           </FormControl>
           <FormControl>
-            <Checkbox name="hotels_purchased" isChecked={form.hotels_purchased} onChange={handleCheckboxChange}>
+            <Checkbox
+              name="hotels_purchased"
+              isChecked={form.hotels_purchased}
+              onChange={handleCheckboxChange}
+            >
               Отели выкуплены?
             </Checkbox>
           </FormControl>
           <FormControl>
             <FormLabel>Справка о типе занятости</FormLabel>
-            <Input name="employment_certificate" value={form.employment_certificate} onChange={handleChange} />
+            <Input
+              name="employment_certificate"
+              value={form.employment_certificate}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Фингарантия, тыс руб</FormLabel>
-            <Input name="financial_guarantee" type="number" value={form.financial_guarantee} onChange={handleChange} />
+            <Input
+              name="financial_guarantee"
+              type="number"
+              value={form.financial_guarantee}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Комментарии</FormLabel>
-            <Input name="comments" value={form.comments} onChange={handleChange} />
+            <Input
+              name="comments"
+              value={form.comments}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Статус визы</FormLabel>
             <Box {...getVisaStatusRootProps()}>
               <Flex gap={3}>
-                <RadioCard {...getVisaStatusRadioProps({ value: '1' })}>Выдана</RadioCard>
-                <RadioCard {...getVisaStatusRadioProps({ value: '0' })}>Отказ</RadioCard>
+                <RadioCard {...getVisaStatusRadioProps({ value: "1" })}>
+                  Выдана
+                </RadioCard>
+                <RadioCard {...getVisaStatusRadioProps({ value: "0" })}>
+                  Отказ
+                </RadioCard>
               </Flex>
             </Box>
           </FormControl>
@@ -288,22 +442,40 @@ const App = () => {
             <FormLabel>Визовый центр</FormLabel>
             <Box {...getVisaCenterRootProps()}>
               <Flex gap={3}>
-                <RadioCard {...getVisaCenterRadioProps({ value: 'VMS' })}>VMS</RadioCard>
-                <RadioCard {...getVisaCenterRadioProps({ value: 'Альмавива' })}>Альмавива</RadioCard>
+                <RadioCard {...getVisaCenterRadioProps({ value: "VMS" })}>
+                  VMS
+                </RadioCard>
+                <RadioCard {...getVisaCenterRadioProps({ value: "Альмавива" })}>
+                  Альмавива
+                </RadioCard>
               </Flex>
             </Box>
           </FormControl>
           <FormControl>
             <FormLabel>Виза выдана на, дней</FormLabel>
-            <Input name="visa_issued_for_days" type="number" value={form.visa_issued_for_days} onChange={handleChange} />
+            <Input
+              name="visa_issued_for_days"
+              type="number"
+              value={form.visa_issued_for_days}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Коридор, дней</FormLabel>
-            <Input name="corridor_days" type="number" value={form.corridor_days} onChange={handleChange} />
+            <Input
+              name="corridor_days"
+              type="number"
+              value={form.corridor_days}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Прошлые визы, поездки</FormLabel>
-            <Input name="past_visas_trips" value={form.past_visas_trips} onChange={handleChange} />
+            <Input
+              name="past_visas_trips"
+              value={form.past_visas_trips}
+              onChange={handleChange}
+            />
           </FormControl>
           <FormControl>
             <FormLabel>Консул</FormLabel>
@@ -311,37 +483,101 @@ const App = () => {
           </FormControl>
           <FormControl>
             <FormLabel>Предполагаемое время пребывания в стране</FormLabel>
-            <Input name="planned_stay_in_country" value={form.planned_stay_in_country} onChange={handleChange} />
+            <Input
+              name="planned_stay_in_country"
+              value={form.planned_stay_in_country}
+              onChange={handleChange}
+            />
           </FormControl>
-          <Button type="submit" mt={3}>Отправить</Button>
+          <Button type="submit" mt={3}>
+            Отправить
+          </Button>
         </Flex>
       </form>
-      <Box mt={10}>
-        {filters.map(filter => (
-          <Box key={filter.key} mb={3}>
-            <Select placeholder={`Фильтр по: ${filter.name}`} onChange={(e) => handleFilterChange(filter.key, e.target.value)}>
-              {[...new Set(stats.map(stat => stat[filter.key] || ''))].map((value, index) => (
-                <option key={index} value={String(value)}>{String(value) || 'Пустое'}</option>
-              ))}
-            </Select>
+      {showChart ? (
+        <Box>
+          <Box mt={10}>
+            {filters.map((filter) => (
+              <Box key={filter.key} mb={3}>
+                <FormLabel>{`Фильтр по: ${filter.name}`}</FormLabel>
+                <Select
+                  placeholder={`Все`}
+                  onChange={(e) =>
+                    handleFilterChange(filter.key, e.target.value)
+                  }
+                >
+                  {[
+                    ...new Set(stats.map((stat) => stat[filter.key] || "")),
+                  ].map((value, index) => (
+                    <option key={index} value={String(value)}>
+                      {String(value) || "Пустое"}
+                    </option>
+                  ))}
+                </Select>
+              </Box>
+            ))}
           </Box>
-        ))}
-      </Box>
-      <Heading as="h2" size="lg" mt={10}>Статистика</Heading>
-      <Flex direction="column" wrap="wrap" mt={5}>
-        <Box flex="1" w={['100%', '100%', '80%']} mb={5} >
-          <Line redraw={true} data={visaData} height={`${CURRENT_WIDTH < 997 ? '300px': '150px'}`} />
+          <Heading as="h2" size="lg" mt={10}>
+            Статистика
+          </Heading>
+          <Flex direction="column" wrap="wrap" mt={5}>
+            <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
+              <Line
+                redraw={true}
+                data={visaData}
+                width={1000}
+                height={CURRENT_WIDTH < 997 ? 300 : 600}
+                options={chartOptions}
+              />
+            </Box>
+            <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
+              <Box>
+                Среднее время ожидания:{" "}
+                {filteredStats.length > 0
+                  ? (
+                      filteredStats.reduce(
+                        (acc, stat) => acc + stat.waiting_days,
+                        0
+                      ) / filteredStats.length
+                    ).toFixed(2)
+                  : 0}{" "}
+                дней
+              </Box>
+              <Box>
+                Максимальное время ожидания:{" "}
+                {filteredStats.length > 0
+                  ? Math.max(...filteredStats.map((stat) => stat.waiting_days))
+                  : 0}{" "}
+                дней
+              </Box>
+              <Box>
+                Минимальное время ожидания:{" "}
+                {filteredStats.length > 0
+                  ? Math.min(...filteredStats.map((stat) => stat.waiting_days))
+                  : 0}{" "}
+                дней
+              </Box>
+            </Box>
+          </Flex>
         </Box>
-        <Box flex="1" w={['100%', '100%', '80%']} mb={5}>
-          <Box>Среднее время ожидания: {filteredStats.length > 0 ? (filteredStats.reduce((acc, stat) => acc + stat.waiting_days, 0) / filteredStats.length).toFixed(2) : 0} дней</Box>
-          <Box>Максимальное время ожидания: {filteredStats.length > 0 ? Math.max(...filteredStats.map(stat => stat.waiting_days)) : 0} дней</Box>
-          <Box>Минимальное время ожидания: {filteredStats.length > 0 ? Math.min(...filteredStats.map(stat => stat.waiting_days)) : 0} дней</Box>
+      ) : (
+        <Box
+          border="2px solid #000000"
+          borderRadius="1rem"
+          backgroundColor="#00000011"
+          m={4}
+          p={5}
+        >
+          К сожалению, не можем вам показать графики, так как вашe устройство их
+          не поддерживает. Но вы можете либо открыть сайт из Google Chrome, либо
+          скачать статистику по кнопке внизу и построить любой график!
         </Box>
-      </Flex>
-      <Button onClick={handleDownload} mt={5}>Экспортировать в XLSX</Button>
+      )}
+      <Button onClick={handleDownload} mt={5}>
+        Экспортировать в XLSX
+      </Button>
     </Container>
   );
-  
 };
 
 export default App;

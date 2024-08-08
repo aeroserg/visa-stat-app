@@ -2,10 +2,10 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "target": "ES2020",
+    "target": "ES2016",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
+    "lib": ["ES2016", "DOM", "DOM.Iterable"],
+    "module": "ES2015",
     "skipLibCheck": true,
 
     /* Bundler mode */

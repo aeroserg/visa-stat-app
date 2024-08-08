@@ -15,12 +15,12 @@ import {
 } from '@chakra-ui/react';
 import axios from 'axios';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartData, TimeScale } from 'chart.js';
 import RadioCard from './RadioCard';
 
 const HOST = 'https://explainagent.ru/visa_app_server/';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale);
 
 interface VisaStat {
   id: number;
@@ -76,7 +76,6 @@ const App = () => {
   const CURRENT_WIDTH = window?.innerWidth;
 
   useEffect(() => {
-    // axios.get(`https://explainagent.ru/visa_app/api/visa-stats`).then(response => {
     axios.get(`${HOST}/api/visa-stats`).then(response => {
       setStats(response.data);
       setFilteredStats(response.data);
@@ -164,10 +163,14 @@ const App = () => {
   const { getRootProps: getVisaCenterRootProps, getRadioProps: getVisaCenterRadioProps } = visaCenterGroup;
 
   const handleFilterChange = (key: VisaStatKeys, value: string) => {
-    setFilteredStats(stats.filter(stat => {
-      const statValue = stat[key];
-      return statValue === value || (value === 'Пустое' && (statValue === null || statValue === undefined || statValue === ''));
-    }));
+    if (value === '' || value === 'Пустое') {
+      setFilteredStats(stats);
+    } else {
+      setFilteredStats(stats.filter(stat => {
+        const statValue = stat[key];
+        return statValue === value || (value === 'Пустое' && (statValue === null || statValue === undefined || statValue === ''));
+      }));
+    }
   };
 
   const filterLastSixMonths = (stats: VisaStat[]) => {
@@ -176,7 +179,7 @@ const App = () => {
     return stats.filter(stat => new Date(stat.visa_application_date) >= yearAgo);
   };
 
-  const visaData = {
+  const visaData: ChartData<'line', number[], string> = {
     labels: filterLastSixMonths(filteredStats).map(stat => stat.visa_application_date),
     datasets: [
       {
@@ -184,6 +187,8 @@ const App = () => {
         data: filterLastSixMonths(filteredStats).map(stat => stat.waiting_days),
         borderColor: 'rgba(75, 192, 192, 1)',
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4,
       }
     ]
   };
@@ -325,7 +330,7 @@ const App = () => {
       <Heading as="h2" size="lg" mt={10}>Статистика</Heading>
       <Flex direction="column" wrap="wrap" mt={5}>
         <Box flex="1" w={['100%', '100%', '80%']} mb={5} >
-          <Line data={visaData} height={`${CURRENT_WIDTH < 997 ? '300px': '150px'}`}  />
+          <Line redraw={true} data={visaData} height={`${CURRENT_WIDTH < 997 ? '300px': '150px'}`} />
         </Box>
         <Box flex="1" w={['100%', '100%', '80%']} mb={5}>
           <Box>Среднее время ожидания: {filteredStats.length > 0 ? (filteredStats.reduce((acc, stat) => acc + stat.waiting_days, 0) / filteredStats.length).toFixed(2) : 0} дней</Box>
@@ -336,6 +341,7 @@ const App = () => {
       <Button onClick={handleDownload} mt={5}>Экспортировать в XLSX</Button>
     </Container>
   );
+  
 };
 
 export default App;

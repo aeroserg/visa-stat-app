@@ -32,7 +32,6 @@ import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
 const HOST = "https://explainagent.ru/visa_app_server/";
-const COUNTRY = 'Italy'
 
 ChartJS.register(
   CategoryScale,
@@ -307,26 +306,23 @@ const App = () => {
     { name: "Визовый центр", key: "visa_center" as VisaStatKeys },
     { name: "Статус визы", key: "visa_status" as VisaStatKeys },
   ];
-
-  const handleDownload = async () => {
-    const response = await axios.get(`${HOST}/api/export`, {
-      responseType: "blob",
-    });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+  const handleDownload = () => {
+    const url = `${HOST}/api/export`;
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `${COUNTRY}_visa_sttistic_${new Date().toISOString().split('T')[0]}.xlsx`);
+    link.setAttribute("download", `visa_statistics_${new Date().toISOString().split('T')[0]}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.remove();
   };
+  
   return (
     <Container maxW="container.xl" p={5}>
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap={3}>
           <FormControl>
             <FormLabel>Город</FormLabel>
-            <Select name="city" value={form.city} onChange={handleChange}>
+            <Select required name="city" value={form.city} onChange={handleChange}>
               <option value="Москва">Москва</option>
               <option value="Краснодар">Краснодар</option>
               <option value="Екатеринбург">Екатеринбург</option>
@@ -341,6 +337,7 @@ const App = () => {
           <FormControl>
             <FormLabel>Дата подачи на визу</FormLabel>
             <Input
+            required
               name="visa_application_date"
               type="date"
               value={form.visa_application_date}
@@ -350,6 +347,7 @@ const App = () => {
           <FormControl>
             <FormLabel>Дата выдачи визы</FormLabel>
             <Input
+              required
               name="visa_issue_date"
               type="date"
               value={form.visa_issue_date}

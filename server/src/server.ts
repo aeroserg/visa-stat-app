@@ -1,9 +1,13 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import sqlite3 from 'sqlite3';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import * as XLSX from 'xlsx';
 import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const port = 3001;
@@ -11,10 +15,13 @@ const port = 3001;
 app.use(bodyParser.json());
 app.use(cors());
 
-// Set the path for the SQLite database file
-const dbPath = path.resolve(__dirname, 'visa_stats.db');
+const COUNTRY = process.env.COUNTRY;
+console.log('COUNTRY:', COUNTRY); // Debug the COUNTRY variable
 
-// Initialize SQLite database
+const dbPath = path.resolve(__dirname, 'visa_stats.db');
+const xlsxFilePath = path.resolve(__dirname, 'stats_visa.xlsx');
+console.log(xlsxFilePath);
+
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
@@ -42,7 +49,30 @@ db.serialize(() => {
   )`);
 });
 
-app.post('/api/visa-stats', (req, res) => {
+interface VisaStat {
+  id?: number;
+  city: string;
+  visa_application_date: string;
+  visa_issue_date: string;
+  waiting_days: number;
+  travel_purpose: string;
+  planned_travel_date: string;
+  additional_doc_request: boolean;
+  tickets_purchased: boolean;
+  hotels_purchased: boolean;
+  employment_certificate: string;
+  financial_guarantee: number;
+  comments: string;
+  visa_center: string;
+  visa_status: string;
+  visa_issued_for_days: number;
+  corridor_days: number;
+  past_visas_trips: string;
+  consul: string;
+  planned_stay_in_italy: string;
+}
+
+app.post('/api/visa-stats', (req: Request, res: Response) => {
   const {
     city, visa_application_date, visa_issue_date, travel_purpose, planned_travel_date,
     additional_doc_request, tickets_purchased, hotels_purchased, employment_certificate,
@@ -66,38 +96,45 @@ app.post('/api/visa-stats', (req, res) => {
     corridor_days, past_visas_trips, consul, planned_stay_in_italy
   ], function(err) {
     if (err) {
-      return console.log(err.message);
+      return res.status(500).json({ error: err.message });
     }
-    res.json({ id: this.lastID, waiting_days });
+
+    db.all(`SELECT * FROM visa_stats`, [], (err, rows: VisaStat[]) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Visa');
+      XLSX.writeFile(workbook, xlsxFilePath);
+
+      res.json({ id: this.lastID, waiting_days });
+    });
   });
 });
 
-app.get('/api/visa-stats', (req, res) => {
-  db.all(`SELECT * FROM visa_stats`, [], (err, rows) => {
+app.get('/api/visa-stats', (req: Request, res: Response) => {
+  db.all(`SELECT * FROM visa_stats`, [], (err, rows: VisaStat[]) => {
+    console.log("Error:", err);
+    console.log("Rows fetched:", rows);
     if (err) {
-      throw err;
+      return res.status(500).json({ error: err.message });
     }
     res.json(rows);
   });
 });
 
-app.get('/api/export', (req, res) => {
-  db.all(`SELECT * FROM visa_stats`, [], async (err, rows) => {
-    if (err) {
-      res.status(500).send("Error fetching data");
-      return;
-    }
-
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Visa Stats');
-
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-    res.setHeader('Content-Disposition', 'attachment; filename="visa_stats.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
-  });
+app.get('/api/export', (req: Request, res: Response) => {
+  if (fs.existsSync(xlsxFilePath)) {
+    res.download(xlsxFilePath, `${COUNTRY}_visa_statistics_${new Date().toISOString().split('T')[0]}.xlsx`, (err: Error) => {
+      if (err) {
+        res.status(500).send("Error downloading file");
+      }
+    });
+  } else {
+    res.status(404).send("File not found");
+  }
 });
 
 app.listen(port, () => {

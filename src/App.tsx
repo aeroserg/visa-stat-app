@@ -35,7 +35,8 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-const HOST = "https://explainagent.ru/visa_app_server";
+const HOST = "http://localhost:3001";
+// const HOST = "https://explainagent.ru/visa_app_server";
 
 ChartJS.register(
   CategoryScale,
@@ -298,16 +299,34 @@ const App = () => {
     getRadioProps: getVisaCenterRadioProps,
   } = visaCenterGroup;
 
+  const groupByDateAndCalculateAverage = (data: VisaStat[]) => {
+    const groupedData: { [key: string]: { totalWaitingDays: number; count: number } } = {};
+  
+    data.forEach((stat) => {
+      const date = stat.visa_application_date.split('.').reverse().join('-');
+      if (!groupedData[date]) {
+        groupedData[date] = { totalWaitingDays: 0, count: 0 };
+      }
+      groupedData[date].totalWaitingDays += stat.waiting_days;
+      groupedData[date].count += 1;
+    });
+  
+    return Object.keys(groupedData)
+      .map((date) => ({
+        date,
+        averageWaitingDays: groupedData[date].totalWaitingDays / groupedData[date].count,
+      }))
+      .sort((a, b) => new Date(a.date.split('.').reverse().join('-')).getTime() - new Date(b.date.split('.').reverse().join('-')).getTime());
+  };
+  
+  const groupedAndSortedData = groupByDateAndCalculateAverage(filteredStats);
+  
   const visaData: ChartData<"line", number[], string> = {
-    labels: filteredStats.map(
-      (stat) => stat.visa_application_date
-    ),
+    labels: groupedAndSortedData.map((entry) => entry.date),
     datasets: [
       {
         label: "Среднее время ожидания",
-        data: filteredStats.map(
-          (stat) => stat.waiting_days
-        ),
+        data: groupedAndSortedData.map((entry) => entry.averageWaitingDays),
         borderColor: "rgba(75, 192, 192, 1)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
         cubicInterpolationMode: "monotone",
@@ -356,7 +375,6 @@ const App = () => {
 
   const filters = [
     { name: "Город", key: "city" as VisaStatKeys },
-    { name: "Цель поездки", key: "travel_purpose" as VisaStatKeys },
     { name: "Визовый центр", key: "visa_center" as VisaStatKeys },
     { name: "Статус визы", key: "visa_status" as VisaStatKeys },
   ];

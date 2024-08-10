@@ -9,7 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "server": "ts-node server/src/server.ts",
-    "start": " npm run build && npm run preview",
+    "start": "npm run transfer_from:csv && npm run build && npm run preview",
     "transfer_from:csv": "node ./data_transfer.mjs",
     "backup": "node ./make_backup.mjs"
   },

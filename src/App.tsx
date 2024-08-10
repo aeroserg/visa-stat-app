@@ -35,8 +35,8 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-const HOST = "http://localhost:3001";
-// const HOST = "https://explainagent.ru/visa_app_server";
+// const HOST = "http://localhost:3001";
+const HOST = "https://explainagent.ru/visa_app_server";
 
 ChartJS.register(
   CategoryScale,
@@ -102,11 +102,12 @@ const App = () => {
   const [showChart, setShowChart] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedVisaCenter, setSelectedVisaCenter] = useState<string>("");
   const [lastTenVisasPeriods, setLastTenVisasPeriods] = useState<number[]>([]);
   const [averageWaitingTime, setAverageWaitingTime] = useState<number>(0);
   const [maxWaitingTime, setMaxWaitingTime] = useState<number>(0);
   const [minWaitingTime, setMinWaitingTime] = useState<number>(0);
-
+  
   const CURRENT_WIDTH = window?.innerWidth;
 
   useEffect(() => {
@@ -130,7 +131,7 @@ const App = () => {
 
   useEffect(() => {
     updateStatistics(filteredStats);
-  }, [filteredStats]);
+    }, [filteredStats]);
 
   const updateStatistics = (stats: VisaStat[]) => {
     const lastTen = stats.slice(-10).map((stat) => stat.waiting_days);
@@ -165,43 +166,55 @@ const App = () => {
   };
 
   const handleFilterChange = (key: VisaStatKeys, value: string) => {
+    let city = selectedCity;
+    let visaCenter = selectedVisaCenter;
+
     if (key === "city") {
-      setSelectedCity(value);
+        city = value;
+        setSelectedCity(value);
+    } else if (key === "visa_center") {
+        visaCenter = value;
+        setSelectedVisaCenter(value);
     }
-    filterStats(value, periodFilter);
-  };
 
-  const handlePeriodFilterChange = (value: string) => {
+    filterStats(city, visaCenter, periodFilter);
+};
+
+const handlePeriodFilterChange = (value: string) => {
     setPeriodFilter(value);
-    filterStats(selectedCity, value);
-  };
+    filterStats(selectedCity, selectedVisaCenter, value);
+};
 
-  const filterStats = (city: string, period: string) => {
-    let filtered = stats;
+const filterStats = (city: string, visaCenter: string, period: string) => {
+  let filtered = stats;
 
-    if (city) {
+  if (city) {
       filtered = filtered.filter((stat) => stat.city === city);
-    }
+  }
 
-    const currentDate = new Date();
-    if (period === "6months") {
+  if (visaCenter) {
+      filtered = filtered.filter((stat) => stat.visa_center === visaCenter);
+  }
+
+  const currentDate = new Date();
+  if (period === "6months") {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
       filtered = filtered.filter((stat) => {
-        const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
-        return issueDate >= sixMonthsAgo;
+          const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
+          return issueDate >= sixMonthsAgo;
       });
-    } else if (period === "1month") {
+  } else if (period === "1month") {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(currentDate.getMonth() - 1);
       filtered = filtered.filter((stat) => {
-        const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
-        return issueDate >= oneMonthAgo;
+          const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
+          return issueDate >= oneMonthAgo;
       });
-    }
+  }
 
-    setFilteredStats(filtered);
-  };
+  setFilteredStats(filtered);
+};
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -376,7 +389,7 @@ const App = () => {
   const filters = [
     { name: "Город", key: "city" as VisaStatKeys },
     { name: "Визовый центр", key: "visa_center" as VisaStatKeys },
-    { name: "Статус визы", key: "visa_status" as VisaStatKeys },
+    // { name: "Статус визы", key: "visa_status" as VisaStatKeys },
   ];
 
   const handleDownload = () => {

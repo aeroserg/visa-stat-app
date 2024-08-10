@@ -1,14 +1,14 @@
 .PHONY: up down build run
 
 build:
-	docker-compose build
+	docker compose build
 
 up:
-	docker-compose up -d
+	docker compose up -d
 
 down:
 	npm run backup
-	docker-compose down -v
+	docker compose down -v
 
 run:
-	docker-compose up -d --build
+	docker compose up -d --build

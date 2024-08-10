@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Set the path for the SQLite database file and CSV file
-const dbPath = path.resolve(__dirname, 'server/src/visa_stats.db');
+const dbPath = path.resolve(__dirname, 'server/dist/visa_stats.db');
 const csvFilePath = path.resolve(__dirname, 'stats_visa.csv');
 
 // Initialize SQLite database

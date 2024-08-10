@@ -12,6 +12,10 @@ import {
   Flex,
   Container,
   useRadioGroup,
+  Text,
+  Radio,
+  RadioGroup,
+  Stack,
 } from "@chakra-ui/react";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
@@ -31,8 +35,7 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-const HOST = "https://explainagent.ru/visa_app_server/";
-
+const HOST = "http://localhost:3001";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -95,6 +98,12 @@ const App = () => {
   const [stats, setStats] = useState<VisaStat[]>([]);
   const [filteredStats, setFilteredStats] = useState<VisaStat[]>([]);
   const [showChart, setShowChart] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [lastTenVisasPeriods, setLastTenVisasPeriods] = useState<number[]>([]);
+  const [averageWaitingTime, setAverageWaitingTime] = useState<number>(0);
+  const [maxWaitingTime, setMaxWaitingTime] = useState<number>(0);
+  const [minWaitingTime, setMinWaitingTime] = useState<number>(0);
 
   const CURRENT_WIDTH = window?.innerWidth;
 
@@ -102,10 +111,9 @@ const App = () => {
     axios.get(`${HOST}/api/visa-stats`).then((response) => {
       setStats(response.data);
       setFilteredStats(response.data);
+      updateStatistics(response.data);
     });
     // Check browser and OS
-    console.log(window.navigator.userAgent);
-    console.log(window.navigator.vendor);
     const userAgent = window.navigator.userAgent;
     const isApple =
       window.navigator.vendor.includes("Apple") ||
@@ -118,24 +126,96 @@ const App = () => {
     }
   }, []);
 
+  useEffect(() => {
+    updateStatistics(filteredStats);
+  }, [filteredStats]);
+
+  const updateStatistics = (stats: VisaStat[]) => {
+    const lastTen = stats.slice(-10).map((stat) => stat.waiting_days);
+    setLastTenVisasPeriods(lastTen);
+
+    if (stats.length > 0) {
+      const average = stats.reduce((acc, stat) => acc + stat.waiting_days, 0) / stats.length;
+      const max = Math.max(...stats.map((stat) => stat.waiting_days));
+      const min = Math.min(...stats.map((stat) => stat.waiting_days));
+
+      setAverageWaitingTime(average);
+      setMaxWaitingTime(max);
+      setMinWaitingTime(min);
+    } else {
+      setAverageWaitingTime(0);
+      setMaxWaitingTime(0);
+      setMinWaitingTime(0);
+    }
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
-    const { name } = e.target;
-    let { value } = e.target;
-    if (name.includes("date")) {
-      value = value.split("-").reverse().join(".");
-    }
+    const { name, value } = e.target;
+
     setForm({
       ...form,
       [name]: value,
     });
   };
 
+  const handleFilterChange = (key: VisaStatKeys, value: string) => {
+    if (key === "city") {
+      setSelectedCity(value);
+    }
+    filterStats(value, periodFilter);
+  };
+
+  const handlePeriodFilterChange = (value: string) => {
+    setPeriodFilter(value);
+    filterStats(selectedCity, value);
+  };
+
+  const filterStats = (city: string, period: string) => {
+    let filtered = stats;
+
+    if (city) {
+      filtered = filtered.filter((stat) => stat.city === city);
+    }
+
+    const currentDate = new Date();
+    if (period === "6months") {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
+      filtered = filtered.filter((stat) => {
+        const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
+        return issueDate >= sixMonthsAgo;
+      });
+    } else if (period === "1month") {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(currentDate.getMonth() - 1);
+      filtered = filtered.filter((stat) => {
+        const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
+        return issueDate >= oneMonthAgo;
+      });
+    }
+
+    setFilteredStats(filtered);
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const updatedForm = { ...form };
+
+    for (const key in updatedForm) {
+      if (key.includes("date") && updatedForm[key as keyof typeof form]) {
+        updatedForm[key as keyof typeof form] = (updatedForm[key as keyof typeof form] as string)
+          .split("-")
+          .reverse()
+          .join(".") as never;
+      }
+    }
+
+    setForm(updatedForm);
 
     const lastSubmission = localStorage.getItem("lastSubmission");
     if (
@@ -153,10 +233,11 @@ const App = () => {
     }
 
     axios
-      .post(`${HOST}/api/visa-stats`, form)
+      .post(`${HOST}/api/visa-stats`, updatedForm)
       .then((response) => {
-        setStats([...stats, response.data]);
-        setFilteredStats([...stats, response.data]);
+        const updatedStats = [...stats, response.data];
+        setStats(updatedStats);
+        setFilteredStats(updatedStats);
         localStorage.setItem("lastSubmission", new Date().toISOString());
         toast({
           position: "top",
@@ -216,41 +297,14 @@ const App = () => {
     getRadioProps: getVisaCenterRadioProps,
   } = visaCenterGroup;
 
-  const handleFilterChange = (key: VisaStatKeys, value: string) => {
-    if (value === "" || value === "Пустое") {
-      setFilteredStats(stats);
-    } else {
-      setFilteredStats(
-        stats.filter((stat) => {
-          const statValue = stat[key];
-          return (
-            statValue === value ||
-            (value === "Пустое" &&
-              (statValue === null ||
-                statValue === undefined ||
-                statValue === ""))
-          );
-        })
-      );
-    }
-  };
-
-  const filterLastSixMonths = (stats: VisaStat[]) => {
-    const yearAgo = new Date();
-    yearAgo.setMonth(yearAgo.getMonth() - 12);
-    return stats.filter(
-      (stat) => new Date(stat.visa_application_date) >= yearAgo
-    );
-  };
-
   const visaData: ChartData<"line", number[], string> = {
-    labels: filterLastSixMonths(filteredStats).map(
+    labels: filteredStats.map(
       (stat) => stat.visa_application_date
     ),
     datasets: [
       {
         label: "Среднее время ожидания",
-        data: filterLastSixMonths(filteredStats).map(
+        data: filteredStats.map(
           (stat) => stat.waiting_days
         ),
         borderColor: "rgba(75, 192, 192, 1)",
@@ -269,7 +323,6 @@ const App = () => {
     },
     scales: {
       x: {
-        // type: 'time',
         time: {
           unit: "month",
         },
@@ -279,7 +332,7 @@ const App = () => {
         },
         ticks: {
           font: {
-            size: 12, // Adjust font size as needed
+            size: 12, 
           },
         },
       },
@@ -290,7 +343,7 @@ const App = () => {
         },
         ticks: {
           font: {
-            size: 12, // Adjust font size as needed
+            size: 12, 
           },
         },
       },
@@ -306,23 +359,32 @@ const App = () => {
     { name: "Визовый центр", key: "visa_center" as VisaStatKeys },
     { name: "Статус визы", key: "visa_status" as VisaStatKeys },
   ];
+
   const handleDownload = () => {
     const url = `${HOST}/api/export`;
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `visa_statistics_${new Date().toISOString().split('T')[0]}.xlsx`);
+    link.setAttribute(
+      "download",
+      `visa_statistics_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
     document.body.appendChild(link);
     link.click();
     link.remove();
   };
-  
+
   return (
     <Container maxW="container.xl" p={5}>
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap={3}>
           <FormControl>
             <FormLabel>Город</FormLabel>
-            <Select required name="city" value={form.city} onChange={handleChange}>
+            <Select
+              required
+              name="city"
+              value={form.city}
+              onChange={handleChange}
+            >
               <option value="Москва">Москва</option>
               <option value="Краснодар">Краснодар</option>
               <option value="Екатеринбург">Екатеринбург</option>
@@ -337,7 +399,7 @@ const App = () => {
           <FormControl>
             <FormLabel>Дата подачи на визу</FormLabel>
             <Input
-            required
+              required
               name="visa_application_date"
               type="date"
               value={form.visa_application_date}
@@ -492,85 +554,88 @@ const App = () => {
           </Button>
         </Flex>
       </form>
-      {showChart ? (
-        <Box>
-          <Box mt={10}>
-            {filters.map((filter) => (
-              <Box key={filter.key} mb={3}>
-                <FormLabel>{`Фильтр по: ${filter.name}`}</FormLabel>
-                <Select
-                  placeholder={`Все`}
-                  onChange={(e) =>
-                    handleFilterChange(filter.key, e.target.value)
-                  }
-                >
-                  {[
-                    ...new Set(stats.map((stat) => stat[filter.key] || "")),
-                  ].map((value, index) => (
-                    <option key={index} value={String(value)}>
-                      {String(value) || "Пустое"}
-                    </option>
-                  ))}
-                </Select>
-              </Box>
-            ))}
+
+      <Box>
+        <Heading as="h3" size="md" mt={6}>Фильтр по периоду:</Heading>
+        <RadioGroup onChange={handlePeriodFilterChange} value={periodFilter}>
+          <Stack direction="row">
+            <Radio value="all">Всё время</Radio>
+            <Radio value="6months">Последние 6 месяцев</Radio>
+            <Radio value="1month">Последний месяц</Radio>
+          </Stack>
+        </RadioGroup>
+
+        <Flex mt={10} flexDir={{base: 'column', md: 'row'}}>
+          {filters.map((filter) => (
+            <Box key={filter.key} m={3} w={{base: '100%', md: '25%'}}>
+              <FormLabel>{`Фильтр по: ${filter.name}`}</FormLabel>
+              <Select
+                placeholder={`Все`}
+                onChange={(e) =>
+                  handleFilterChange(filter.key, e.target.value)
+                }
+              >
+                {[
+                  ...new Set(stats.map((stat) => stat[filter.key] || "")),
+                ].map((value, index) => (
+                  <option key={index} value={String(value)}>
+                    {String(value) || "Пустое"}
+                  </option>
+                ))}
+              </Select>
+            </Box>
+          ))}
+        </Flex>
+
+        <Heading as="h2" size="lg" mt={10}>
+          Статистика
+        </Heading>
+        <Text>
+          Внимание! Статистика и графики ориентировочные! Необходимо понимать, что в данную форму добавить запись может любой человек. Данные в графике и в файле, который можно скачать ниже, примерные и не точные.
+        </Text>
+        <Flex direction="column" wrap="wrap" mt={5}>
+        {showChart ? (
+          <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
+            <Line
+              redraw={true}
+              data={visaData}
+              height={CURRENT_WIDTH < 997 ? 300 : 800}
+              options={chartOptions}
+            />
           </Box>
-          <Heading as="h2" size="lg" mt={10}>
-            Статистика
-          </Heading>
-          <Flex direction="column" wrap="wrap" mt={5}>
-            <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
-              <Line
-                redraw={true}
-                data={visaData}
-                width={1000}
-                height={CURRENT_WIDTH < 997 ? 300 : 600}
-                options={chartOptions}
-              />
+          ) : (
+            <Box
+              border="2px solid #000000"
+              borderRadius="1rem"
+              backgroundColor="#00000011"
+              m={4}
+              p={5}
+            >
+              К сожалению, не можем вам показать графики, так как вашe устройство их
+              не поддерживает. Но вы можете либо открыть сайт из Google Chrome, либо
+              скачать статистику по кнопке внизу и построить любой график!
             </Box>
-            <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
-              <Box>
-                Среднее время ожидания:{" "}
-                {filteredStats.length > 0
-                  ? (
-                      filteredStats.reduce(
-                        (acc, stat) => acc + stat.waiting_days,
-                        0
-                      ) / filteredStats.length
-                    ).toFixed(2)
-                  : 0}{" "}
-                дней
-              </Box>
-              <Box>
-                Максимальное время ожидания:{" "}
-                {filteredStats.length > 0
-                  ? Math.max(...filteredStats.map((stat) => stat.waiting_days))
-                  : 0}{" "}
-                дней
-              </Box>
-              <Box>
-                Минимальное время ожидания:{" "}
-                {filteredStats.length > 0
-                  ? Math.min(...filteredStats.map((stat) => stat.waiting_days))
-                  : 0}{" "}
-                дней
-              </Box>
+          )}
+          <Box flex="1" w={["100%", "100%", "100%"]} mb={5}>
+            <Box>
+              Среднее время ожидания:{" "}
+              {averageWaitingTime.toFixed(2)} дней
             </Box>
-          </Flex>
-        </Box>
-      ) : (
-        <Box
-          border="2px solid #000000"
-          borderRadius="1rem"
-          backgroundColor="#00000011"
-          m={4}
-          p={5}
-        >
-          К сожалению, не можем вам показать графики, так как вашe устройство их
-          не поддерживает. Но вы можете либо открыть сайт из Google Chrome, либо
-          скачать статистику по кнопке внизу и построить любой график!
-        </Box>
-      )}
+            <Box>
+              Максимальное время ожидания:{" "}
+              {maxWaitingTime} дней
+            </Box>
+            <Box>
+              Минимальное время ожидания:{" "}
+              {minWaitingTime} дней
+            </Box>
+            <Box>
+              Последние 10 человек ждали: {lastTenVisasPeriods.join(", ")} дней, прежде чем получили визы.
+            </Box>
+          </Box>
+        </Flex>
+      </Box>
+
       <Button onClick={handleDownload} mt={5}>
         Экспортировать в XLSX
       </Button>

@@ -20,6 +20,7 @@
     "@types/sqlite3": "^3.1.11",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",

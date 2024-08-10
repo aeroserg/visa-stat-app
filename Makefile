@@ -8,6 +8,9 @@ up:
 
 down:
 	npm i
+	cd server
+	npm i
+	cd ..
 	npm run backup 
 	docker compose down -v
 

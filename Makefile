@@ -7,6 +7,7 @@ up:
 	docker compose up -d
 
 down:
+	npm i
 	npm run backup
 	docker compose down -v
 

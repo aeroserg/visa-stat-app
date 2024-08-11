@@ -35,8 +35,8 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-  const HOST = "http://localhost:3001";
-// const HOST = "https://explainagent.ru/visa_app_server";
+  // const HOST = "http://localhost:3001";
+const HOST = "https://explainagent.ru/visa_app_server";
 
 ChartJS.register(
   CategoryScale,

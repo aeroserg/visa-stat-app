@@ -35,8 +35,8 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-//  const HOST = "http://localhost:3001";
-const HOST = "https://explainagent.ru/visa_app_server";
+  const HOST = "http://localhost:3001";
+// const HOST = "https://explainagent.ru/visa_app_server";
 
 ChartJS.register(
   CategoryScale,
@@ -107,7 +107,7 @@ const App = () => {
   const [averageWaitingTime, setAverageWaitingTime] = useState<number>(0);
   const [maxWaitingTime, setMaxWaitingTime] = useState<number>(0);
   const [minWaitingTime, setMinWaitingTime] = useState<number>(0);
-  
+
   const CURRENT_WIDTH = window?.innerWidth;
 
   useEffect(() => {
@@ -131,14 +131,15 @@ const App = () => {
 
   useEffect(() => {
     updateStatistics(filteredStats);
-    }, [filteredStats]);
+  }, [filteredStats]);
 
   const updateStatistics = (stats: VisaStat[]) => {
     const lastTen = stats.slice(-10).map((stat) => stat.waiting_days);
     setLastTenVisasPeriods(lastTen);
 
     if (stats.length > 0) {
-      const average = stats.reduce((acc, stat) => acc + stat.waiting_days, 0) / stats.length;
+      const average =
+        stats.reduce((acc, stat) => acc + stat.waiting_days, 0) / stats.length;
       const max = Math.max(...stats.map((stat) => stat.waiting_days));
       const min = Math.min(...stats.map((stat) => stat.waiting_days));
 
@@ -170,65 +171,79 @@ const App = () => {
     let visaCenter = selectedVisaCenter;
 
     if (key === "city") {
-        city = value;
-        setSelectedCity(value);
+      city = value;
+      setSelectedCity(value);
     } else if (key === "visa_center") {
-        visaCenter = value;
-        setSelectedVisaCenter(value);
+      visaCenter = value;
+      setSelectedVisaCenter(value);
     }
 
     filterStats(city, visaCenter, periodFilter);
-};
+  };
 
-const handlePeriodFilterChange = (value: string) => {
+  const handlePeriodFilterChange = (value: string) => {
     setPeriodFilter(value);
     filterStats(selectedCity, selectedVisaCenter, value);
-};
+  };
 
-const filterStats = (city: string, visaCenter: string, period: string) => {
-  let filtered = stats;
+  const filterStats = (city: string, visaCenter: string, period: string) => {
+    let filtered = stats;
 
-  if (city) {
+    if (city) {
       filtered = filtered.filter((stat) => stat.city === city);
-  }
+    }
 
-  if (visaCenter) {
+    if (visaCenter) {
       filtered = filtered.filter((stat) => stat.visa_center === visaCenter);
-  }
+    }
 
-  const currentDate = new Date();
-  if (period === "6months") {
+    const currentDate = new Date();
+    if (period === "6months") {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
       filtered = filtered.filter((stat) => {
-          const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
-          return issueDate >= sixMonthsAgo;
+        const issueDate = new Date(
+          stat.visa_issue_date.split(".").reverse().join("-")
+        );
+        return issueDate >= sixMonthsAgo;
       });
-  } else if (period === "1month") {
+    } else if (period === "1month") {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(currentDate.getMonth() - 1);
       filtered = filtered.filter((stat) => {
-          const issueDate = new Date(stat.visa_issue_date.split('.').reverse().join('-'));
-          return issueDate >= oneMonthAgo;
+        const issueDate = new Date(
+          stat.visa_issue_date.split(".").reverse().join("-")
+        );
+        return issueDate >= oneMonthAgo;
       });
-  }
+    }
 
-  setFilteredStats(filtered);
-};
+    setFilteredStats(filtered);
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const updatedForm = { ...form };
+    const updatedForm = JSON.parse(JSON.stringify(form));
 
     for (const key in updatedForm) {
       if (key.includes("date") && updatedForm[key as keyof typeof form]) {
-        updatedForm[key as keyof typeof form] = (updatedForm[key as keyof typeof form] as string)
+        updatedForm[key as keyof typeof form] = (
+          updatedForm[key as keyof typeof form] as string
+        )
           .split("-")
           .reverse()
           .join(".") as never;
       }
     }
+
+    const applicationDate = new Date(form.visa_application_date);
+    const issueDate = new Date(form.visa_issue_date);
+    const waitingDays = Math.ceil(
+      (issueDate.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    updatedForm.waiting_days = waitingDays;
 
     setForm(updatedForm);
 
@@ -276,6 +291,7 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
       });
   };
 
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setForm({
@@ -313,27 +329,34 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
   } = visaCenterGroup;
 
   const groupByDateAndCalculateAverage = (data: VisaStat[]) => {
-    const groupedData: { [key: string]: { totalWaitingDays: number; count: number } } = {};
-  
+    const groupedData: {
+      [key: string]: { totalWaitingDays: number; count: number };
+    } = {};
+
     data.forEach((stat) => {
-      const date = stat.visa_application_date?.split('.').reverse().join('-');
+      const date = stat.visa_application_date?.split(".").reverse().join("-");
       if (!groupedData[date]) {
         groupedData[date] = { totalWaitingDays: 0, count: 0 };
       }
       groupedData[date].totalWaitingDays += stat.waiting_days;
       groupedData[date].count += 1;
     });
-  
+
     return Object.keys(groupedData)
       .map((date) => ({
         date,
-        averageWaitingDays: groupedData[date].totalWaitingDays / groupedData[date].count,
+        averageWaitingDays:
+          groupedData[date].totalWaitingDays / groupedData[date].count,
       }))
-      .sort((a, b) => new Date(a.date.split('.').reverse().join('-')).getTime() - new Date(b.date.split('.').reverse().join('-')).getTime());
+      .sort(
+        (a, b) =>
+          new Date(a.date.split(".").reverse().join("-")).getTime() -
+          new Date(b.date.split(".").reverse().join("-")).getTime()
+      );
   };
-  
+
   const groupedAndSortedData = groupByDateAndCalculateAverage(filteredStats);
-  
+
   const visaData: ChartData<"line", number[], string> = {
     labels: groupedAndSortedData.map((entry) => entry.date),
     datasets: [
@@ -365,7 +388,7 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
         },
         ticks: {
           font: {
-            size: 12, 
+            size: 12,
           },
         },
       },
@@ -376,7 +399,7 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
         },
         ticks: {
           font: {
-            size: 12, 
+            size: 12,
           },
         },
       },
@@ -588,7 +611,9 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
       </form>
 
       <Box>
-        <Heading as="h3" size="md" mt={6}>Фильтр по периоду:</Heading>
+        <Heading as="h3" size="md" mt={6}>
+          Фильтр по периоду:
+        </Heading>
         <RadioGroup onChange={handlePeriodFilterChange} value={periodFilter}>
           <Stack direction="row">
             <Radio value="all">Всё время</Radio>
@@ -597,23 +622,21 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
           </Stack>
         </RadioGroup>
 
-        <Flex mt={10} flexDir={{base: 'column', md: 'row'}}>
+        <Flex mt={10} flexDir={{ base: "column", md: "row" }}>
           {filters.map((filter) => (
-            <Box key={filter.key} m={3} w={{base: '100%', md: '25%'}}>
+            <Box key={filter.key} m={3} w={{ base: "100%", md: "25%" }}>
               <FormLabel>{`Фильтр по: ${filter.name}`}</FormLabel>
               <Select
                 placeholder={`Все`}
-                onChange={(e) =>
-                  handleFilterChange(filter.key, e.target.value)
-                }
+                onChange={(e) => handleFilterChange(filter.key, e.target.value)}
               >
-                {[
-                  ...new Set(stats.map((stat) => stat[filter.key] || "")),
-                ].map((value, index) => (
-                  <option key={index} value={String(value)}>
-                    {String(value) || "Пустое"}
-                  </option>
-                ))}
+                {[...new Set(stats.map((stat) => stat[filter.key] || ""))].map(
+                  (value, index) => (
+                    <option key={index} value={String(value)}>
+                      {String(value) || "Пустое"}
+                    </option>
+                  )
+                )}
               </Select>
             </Box>
           ))}
@@ -623,18 +646,20 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
           Статистика
         </Heading>
         <Text>
-          Внимание! Статистика и графики ориентировочные! Необходимо понимать, что в данную форму добавить запись может любой человек. Данные в графике и в файле, который можно скачать ниже, примерные и не точные.
+          Внимание! Статистика и графики ориентировочные! Необходимо понимать,
+          что в данную форму добавить запись может любой человек. Данные в
+          графике и в файле, который можно скачать ниже, примерные и не точные.
         </Text>
         <Flex direction="column" wrap="wrap" mt={5}>
-        {showChart ? (
-          <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
-            <Line
-              redraw={true}
-              data={visaData}
-              height={CURRENT_WIDTH < 997 ? 300 : 800}
-              options={chartOptions}
-            />
-          </Box>
+          {showChart ? (
+            <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
+              <Line
+                redraw={true}
+                data={visaData}
+                height={CURRENT_WIDTH < 997 ? 300 : 800}
+                options={chartOptions}
+              />
+            </Box>
           ) : (
             <Box
               border="2px solid #000000"
@@ -643,26 +668,21 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
               m={4}
               p={5}
             >
-              К сожалению, не можем вам показать графики, так как вашe устройство их
-              не поддерживает. Но вы можете либо открыть сайт из Google Chrome, либо
-              скачать статистику по кнопке внизу и построить любой график!
+              К сожалению, не можем вам показать графики, так как вашe
+              устройство их не поддерживает. Но вы можете либо открыть сайт из
+              Google Chrome, либо скачать статистику по кнопке внизу и построить
+              любой график!
             </Box>
           )}
           <Box flex="1" w={["100%", "100%", "100%"]} mb={5}>
             <Box>
-              Среднее время ожидания:{" "}
-              {averageWaitingTime.toFixed(2)} дней
+              Среднее время ожидания: {averageWaitingTime.toFixed(2)} дней
             </Box>
+            <Box>Максимальное время ожидания: {maxWaitingTime} дней</Box>
+            <Box>Минимальное время ожидания: {minWaitingTime} дней</Box>
             <Box>
-              Максимальное время ожидания:{" "}
-              {maxWaitingTime} дней
-            </Box>
-            <Box>
-              Минимальное время ожидания:{" "}
-              {minWaitingTime} дней
-            </Box>
-            <Box>
-              Последние 10 человек ждали: {lastTenVisasPeriods.join(", ")} дней, прежде чем получили визы.
+              Последние 10 человек ждали: {lastTenVisasPeriods.join(", ")} дней,
+              прежде чем получили визы.
             </Box>
           </Box>
         </Flex>

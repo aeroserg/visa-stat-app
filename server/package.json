@@ -1,14 +1,15 @@
 {
   "name": "server",
-  "version": "1.0.0",
+  "version": "2.6.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "start:dev": "ts-node src/server.ts",
     "build": "tsc",
     "copy_db": "cp src/visa_stats.db dist/",
     "copy_xlsx": "cp src/stats_visa.xlsx dist/",
-    "serve": "npm run build && npm run copy_db && npm run copy_xlsx && node dist/server.js"
+    "serve": "npm run build && npm run copy_db && npm run copy_xlsx && node dist/server.js",
+    "backup": "node ../make_backup.mjs"
   },
   "keywords": [],
   "author": "",

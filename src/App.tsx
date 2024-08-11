@@ -35,8 +35,8 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-// const HOST = "http://localhost:3001";
-const HOST = "https://explainagent.ru/visa_app_server";
+ const HOST = "http://localhost:3001";
+// const HOST = "https://explainagent.ru/visa_app_server";
 
 ChartJS.register(
   CategoryScale,
@@ -61,12 +61,12 @@ interface VisaStat {
   tickets_purchased: boolean;
   hotels_purchased: boolean;
   employment_certificate: string;
-  financial_guarantee: number;
+  financial_guarantee: number | undefined;
   comments: string;
   visa_center: string;
   visa_status: string;
-  visa_issued_for_days: number;
-  corridor_days: number;
+  visa_issued_for_days: number | undefined;
+  corridor_days: number | undefined;
   past_visas_trips: string;
   consul: string;
   planned_stay_in_country: string;
@@ -77,7 +77,7 @@ type VisaStatKeys = keyof VisaStat;
 const App = () => {
   const toast = useToast();
   const [form, setForm] = useState({
-    city: "",
+    city: "Москва",
     visa_application_date: "",
     visa_issue_date: "",
     travel_purpose: "",
@@ -86,12 +86,12 @@ const App = () => {
     tickets_purchased: false,
     hotels_purchased: false,
     employment_certificate: "",
-    financial_guarantee: 0,
+    financial_guarantee: undefined,
     comments: "",
     visa_center: "VMS",
     visa_status: "1",
-    visa_issued_for_days: 0,
-    corridor_days: 0,
+    visa_issued_for_days: undefined,
+    corridor_days: undefined,
     past_visas_trips: "",
     consul: "",
     planned_stay_in_country: "",
@@ -316,7 +316,7 @@ const filterStats = (city: string, visaCenter: string, period: string) => {
     const groupedData: { [key: string]: { totalWaitingDays: number; count: number } } = {};
   
     data.forEach((stat) => {
-      const date = stat.visa_application_date.split('.').reverse().join('-');
+      const date = stat.visa_application_date?.split('.').reverse().join('-');
       if (!groupedData[date]) {
         groupedData[date] = { totalWaitingDays: 0, count: 0 };
       }

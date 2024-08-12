@@ -225,6 +225,13 @@ const App = () => {
     e.preventDefault();
 
     const updatedForm = JSON.parse(JSON.stringify(form));
+    const applicationDate = new Date(form.visa_application_date.split(".").reverse().join("-"));
+    const issueDate = new Date(form.visa_issue_date.split(".").reverse().join("-"));
+    const waitingDays = Math.ceil(
+      (issueDate.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    console.log(issueDate.getTime() - applicationDate.getTime() + ' ' + waitingDays)
+    updatedForm.waiting_days = waitingDays;
 
     for (const key in updatedForm) {
       if (key.includes("date") && updatedForm[key as keyof typeof form]) {
@@ -233,17 +240,10 @@ const App = () => {
         )
           .split("-")
           .reverse()
-          .join(".") as never;
+          .join(".");
+        console.log(key + ' ' + updatedForm[key as keyof typeof form])
       }
-    }
-
-    const applicationDate = new Date(form.visa_application_date);
-    const issueDate = new Date(form.visa_issue_date);
-    const waitingDays = Math.ceil(
-      (issueDate.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    updatedForm.waiting_days = waitingDays;
+    }   
 
     setForm(updatedForm);
 
@@ -384,7 +384,7 @@ const App = () => {
         },
         title: {
           display: true,
-          text: "Дата",
+          text: "Дата подачи на визу",
         },
         ticks: {
           font: {

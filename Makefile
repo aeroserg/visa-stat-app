@@ -11,16 +11,17 @@ HOST_XLSX_PATH=./server/src/stats_visa.xlsx
 down:
 	docker cp $(CONTAINER_NAME):$(CONTAINER_DB_PATH) $(HOST_DB_PATH)
 	docker cp $(CONTAINER_NAME):$(CONTAINER_XLSX_PATH) $(HOST_XLSX_PATH)
-	docker-compose down -v
+	docker compose down -v
 
 run: 
-	docker-compose up -d --build
+	docker compose up -d --build
+	docker logs -f visa-stat-app-frontend
 
 backup-db:
 	docker cp $(CONTAINER_NAME):$(CONTAINER_DB_PATH) $(HOST_DB_PATH)
 	docker cp $(CONTAINER_NAME):$(CONTAINER_XLSX_PATH) $(HOST_XLSX_PATH)
 
 clean:
-	docker-compose down -v
+	docker compose down -v
 	rm -f $(HOST_DB_PATH)
 	rm -f $(HOST_XLSX_PATH)

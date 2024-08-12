@@ -35,7 +35,7 @@ import {
 import "chartjs-adapter-moment";
 import RadioCard from "./RadioCard";
 
-  // const HOST = "http://localhost:3001";
+//const HOST = "http://localhost:3001";
 const HOST = "https://explainagent.ru/visa_app_server";
 
 ChartJS.register(
@@ -225,13 +225,6 @@ const App = () => {
     e.preventDefault();
 
     const updatedForm = JSON.parse(JSON.stringify(form));
-    const applicationDate = new Date(form.visa_application_date.split(".").reverse().join("-"));
-    const issueDate = new Date(form.visa_issue_date.split(".").reverse().join("-"));
-    const waitingDays = Math.ceil(
-      (issueDate.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    console.log(issueDate.getTime() - applicationDate.getTime() + ' ' + waitingDays)
-    updatedForm.waiting_days = waitingDays;
 
     for (const key in updatedForm) {
       if (key.includes("date") && updatedForm[key as keyof typeof form]) {

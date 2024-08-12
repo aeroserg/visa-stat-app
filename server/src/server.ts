@@ -81,7 +81,7 @@ app.post('/api/visa-stats', (req: Request, res: Response) => {
   } = req.body;
 
   const waiting_days = Math.ceil(
-    (new Date(visa_issue_date).getTime() - new Date(visa_application_date).getTime()) / (1000 * 60 * 60 * 24)
+    (new Date(visa_issue_date.split(".").reverse().join("-")).getTime() - new Date(visa_application_date.split(".").reverse().join("-")).getTime()) / (1000 * 60 * 60 * 24)
   );
 
   db.run(`INSERT INTO visa_stats (

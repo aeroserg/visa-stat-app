@@ -424,7 +424,9 @@ const App = () => {
 
   return (
     <Container maxW="container.xl" p={5}>
-    <Heading as={'h1'} mb={3}>Здесь можно записать свой опыт подачи на итальянскую визу</Heading>
+    <Heading as={'h1'} mb={2}>Здесь можно записать свой опыт подачи на итальянскую визу</Heading>
+    <Text pb={3}><Link href="https://explainagent.ru/visa_app/" target="_blank" color={'green.400'} fontWeight={'200'}>https://explainagent.ru/visa_app/</Link></Text>
+
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap={3}>
           <FormControl>
@@ -604,7 +606,6 @@ const App = () => {
           </Button>
         </Flex>
       </form>
-      <Heading as={'h2'} my={3} py={5}><Link href="https://explainagent.ru/visa_app/" target="_blank" color={'#000000'} fontWeight={'900'}>https://explainagent.ru/visa_app/</Link></Heading>
 
       <Box mt={3}>
         <Heading as="h3" size="md" mt={6}>
@@ -665,7 +666,7 @@ const App = () => {
               p={5}
             >
               К сожалению, не можем вам показать графики, так как вашe
-              устройство их не поддерживает. Но вы можете либо открыть сайт из
+              устройство их не поддерживает. Но вы можете либо открыть сайт <Link href="https://explainagent.ru/visa_app/" target="_blank" color={'blue'} fontWeight={'400'}>https://explainagent.ru/visa_app/</Link> в
               Google Chrome, либо скачать статистику по кнопке внизу и построить
               любой график!
             </Box>

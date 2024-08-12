@@ -16,6 +16,7 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  Link,
 } from "@chakra-ui/react";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
@@ -423,6 +424,7 @@ const App = () => {
 
   return (
     <Container maxW="container.xl" p={5}>
+    <Heading as={'h1'} mb={3}>Здесь можно записать свой опыт подачи на итальянскую визу</Heading>
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap={3}>
           <FormControl>
@@ -602,8 +604,9 @@ const App = () => {
           </Button>
         </Flex>
       </form>
+      <Heading as={'h2'} my={3} py={5}><Link href="https://explainagent.ru/visa_app/" target="_blank" color={'#000000'} fontWeight={'900'}>https://explainagent.ru/visa_app/</Link></Heading>
 
-      <Box>
+      <Box mt={3}>
         <Heading as="h3" size="md" mt={6}>
           Фильтр по периоду:
         </Heading>

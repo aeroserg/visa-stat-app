@@ -426,11 +426,11 @@ const App = () => {
     <Container maxW="container.xl" p={5}>
     <Heading as={'h1'} mb={2}>Здесь можно записать свой опыт подачи на итальянскую визу</Heading>
     <Text pb={3}><Link href="https://explainagent.ru/visa_app/" target="_blank" color={'green.400'} fontWeight={'200'}>https://explainagent.ru/visa_app/</Link></Text>
-
+    <Text pb={3} fontWeight={'700'}>Все поля не обязательные кроме даты подачи на визу и даты получения визы, ведь именно ради этих дат вы и мы здесь:)</Text>
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap={3}>
           <FormControl>
-            <FormLabel>Город</FormLabel>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Город подачи</FormLabel>
             <Select
               required
               name="city"
@@ -448,8 +448,21 @@ const App = () => {
               <option value="Санкт-Петербург">Санкт-Петербург</option>
             </Select>
           </FormControl>
-          <FormControl>
-            <FormLabel>Дата подачи на визу</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Визовый центр</FormLabel>
+            <Box {...getVisaCenterRootProps()}>
+              <Flex gap={3}>
+                <RadioCard {...getVisaCenterRadioProps({ value: "VMS" })}>
+                  VMS
+                </RadioCard>
+                <RadioCard {...getVisaCenterRadioProps({ value: "Альмавива" })}>
+                  Альмавива
+                </RadioCard>
+              </Flex>
+            </Box>
+          </FormControl>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Дата подачи на визу</FormLabel>
             <Input
               required
               name="visa_application_date"
@@ -458,8 +471,8 @@ const App = () => {
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Дата выдачи визы</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Дата выдачи визы (дата, когда вам пришло извещение или вы увидели на сайте, что ваши документы готовы к выдаче; дату смены статуса в "отправлены в город заявителя" или "на пути из консульства" лучше не записывать, а также лучше не записывать дату, когда вы получили визу, если вы получили ее позднее, чем вам пришло смс)</FormLabel>
             <Input
               required
               name="visa_issue_date"
@@ -468,16 +481,16 @@ const App = () => {
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Цель поездки</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Цель поездки (можно указать, например, "Туризм", "Учеба", "Родственники", "Бизнес", "Культура" и тд)</FormLabel>
             <Input
               name="travel_purpose"
               value={form.travel_purpose}
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Предполагаемая дата поездки</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Предполагаемая дата поездки (ваша предполагаемая дата въезда в ЕС по текущим билетам)</FormLabel>
             <Input
               name="planned_travel_date"
               type="date"
@@ -485,6 +498,7 @@ const App = () => {
               onChange={handleChange}
             />
           </FormControl>
+          <Text my={3} fontWeight={'700'}>Отметьте варианты ниже галочкой, если ответ на вопрос утвердительный</Text>
           <FormControl>
             <Checkbox
               name="additional_doc_request"
@@ -512,16 +526,16 @@ const App = () => {
               Отели выкуплены?
             </Checkbox>
           </FormControl>
-          <FormControl>
-            <FormLabel>Справка о типе занятости</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Справка о типе занятости (можно указать, например, "работа", "учеба", "ИП", "самозанятость", "без справки", "безработный" и тд)</FormLabel>
             <Input
               name="employment_certificate"
               value={form.employment_certificate}
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Фингарантия, тыс руб</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Фингарантия, тыс руб (если у вас гарантия в сумме из всех источников - 500 000 рублей, пишите 500, если 1 000 000 руб, пишите 1000, то есть убираем 3 нуля с конца)</FormLabel>
             <Input
               name="financial_guarantee"
               type="number"
@@ -529,15 +543,8 @@ const App = () => {
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Комментарии</FormLabel>
-            <Input
-              name="comments"
-              value={form.comments}
-              onChange={handleChange}
-            />
-          </FormControl>
-          <FormControl>
+        
+          <FormControl mt={3}>
             <FormLabel>Статус визы</FormLabel>
             <Box {...getVisaStatusRootProps()}>
               <Flex gap={3}>
@@ -550,21 +557,9 @@ const App = () => {
               </Flex>
             </Box>
           </FormControl>
-          <FormControl>
-            <FormLabel>Визовый центр</FormLabel>
-            <Box {...getVisaCenterRootProps()}>
-              <Flex gap={3}>
-                <RadioCard {...getVisaCenterRadioProps({ value: "VMS" })}>
-                  VMS
-                </RadioCard>
-                <RadioCard {...getVisaCenterRadioProps({ value: "Альмавива" })}>
-                  Альмавива
-                </RadioCard>
-              </Flex>
-            </Box>
-          </FormControl>
-          <FormControl>
-            <FormLabel>Виза выдана на, дней</FormLabel>
+         
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Виза выдана на, дней (сюда надо записать число дней пребывания, которое указано в визе)</FormLabel>
             <Input
               name="visa_issued_for_days"
               type="number"
@@ -572,8 +567,8 @@ const App = () => {
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Коридор, дней</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Коридор, дней (сюда надо записать число дней, во время которых вам разрешено въехать в Шенген)</FormLabel>
             <Input
               name="corridor_days"
               type="number"
@@ -581,23 +576,31 @@ const App = () => {
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Прошлые визы, поездки</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Прошлые визы, поездки (в свободном формате)</FormLabel>
             <Input
               name="past_visas_trips"
               value={form.past_visas_trips}
               onChange={handleChange}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel>Консул</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Консул</FormLabel>
             <Input name="consul" value={form.consul} onChange={handleChange} />
           </FormControl>
-          <FormControl>
-            <FormLabel>Предполагаемое время пребывания в стране</FormLabel>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Предполагаемое время пребывания в стране в первую поездку</FormLabel>
             <Input
               name="planned_stay_in_country"
               value={form.planned_stay_in_country}
+              onChange={handleChange}
+            />
+          </FormControl>
+          <FormControl mt={3}>
+            <FormLabel fontSize={{base: "12px",md: "16px" }}>Любые другие замечания или комментари, которые вам кажутся важными (например, что подавались с семьей из 4 человек, или бронь билетов делали через агентство, или в прошлом есть отказы в визах и так далее)</FormLabel>
+            <Input
+              name="comments"
+              value={form.comments}
               onChange={handleChange}
             />
           </FormControl>
@@ -642,11 +645,12 @@ const App = () => {
         <Heading as="h2" size="lg" mt={10}>
           Статистика
         </Heading>
+        {showChart && (
         <Text>
           Внимание! Статистика и графики ориентировочные! Необходимо понимать,
           что в данную форму добавить запись может любой человек. Данные в
           графике и в файле, который можно скачать ниже, примерные и не точные.
-        </Text>
+        </Text>)}
         <Flex direction="column" wrap="wrap" mt={5}>
           {showChart ? (
             <Box flex="1" w={["100%", "100%", "80%"]} mb={5}>
